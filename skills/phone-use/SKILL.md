@@ -52,4 +52,8 @@ can read, then fetch the attachment there.
 
 ## Known app paths
 
+- Google Maps "leave later": type `A to B` in the search field, pick the destination, then
+  More options (⋯) > Set depart or arrive time, and swipe the wheels. The wheels open at the phone's
+  clock, but Google reads the time in the route's local timezone: convert first (also the date)
+  and confirm the chip reads e.g. `Leave 20:49, Nov 8` before reporting. Reset to Now afterwards.
 - A first screen showing "Please wait..." is still loading: `phone_observe` with `wait_ms`.
