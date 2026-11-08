@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import base64
 import json
-import os
 import re
 import threading
 import time
@@ -88,11 +87,11 @@ class PinkyClient:
         body = {"jsonrpc": "2.0", "id": self._next_id, "method": method, "params": params}
         return self._post(body, timeout) or {}
 
-    def _initialize(self) -> dict:
+    def _initialize(self, timeout: float = 15) -> dict:
         self.session_id = None
         result = self._request("initialize", {"protocolVersion": PROTOCOL, "capabilities": {},
-                                              "clientInfo": {"name": PLUGIN, "version": "0.2.0"}}, 15)
-        self._post({"jsonrpc": "2.0", "method": "notifications/initialized"}, 15)
+                                              "clientInfo": {"name": PLUGIN, "version": "0.2.0"}}, timeout)
+        self._post({"jsonrpc": "2.0", "method": "notifications/initialized"}, timeout)
         return result
 
     def _with_session(self, method: str, params: dict, timeout: float) -> dict:
@@ -100,7 +99,7 @@ class PinkyClient:
             for attempt in (1, 2):
                 try:
                     if not self.session_id:
-                        self._initialize()
+                        self._initialize(min(timeout, 15))
                     return self._request(method, params, timeout)
                 except urllib.error.HTTPError as e:
                     if e.code == 401:
@@ -182,7 +181,7 @@ def _token() -> Optional[str]:
         from agent.secret_scope import get_secret
         return get_secret(TOKEN_ENV)
     except Exception:
-        return os.environ.get(TOKEN_ENV)
+        return None
 
 
 def _configured() -> bool:
@@ -214,10 +213,19 @@ def _notify(text: str) -> None:
         pass
 
 
+def _unattended() -> bool:
+    try:
+        return _ctx is not None and _ctx.current_cron_execution() is not None
+    except Exception:
+        return False
+
+
 def _handler(name: str) -> Callable:
     def handle(args: dict, **_: Any) -> str:
         try:
-            return run_tool(name, args, _get_client(), _notify, _shots_dir)
+            # Nobody can answer Pinky during a cron run: report approval_pending instead of waiting.
+            wait_s = 0 if _unattended() else WAIT_FOR_PERSON_S
+            return run_tool(name, args, _get_client(), _notify, _shots_dir, wait_s)
         except PinkyError as e:
             return json.dumps({"success": False, "error": str(e)})
         except (urllib.error.URLError, OSError, TimeoutError) as e:

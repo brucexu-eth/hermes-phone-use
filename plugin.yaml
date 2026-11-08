@@ -2,7 +2,7 @@ name: hermes-phone-use
 version: "0.2.0"
 description: "Operate your real phone from any Hermes, such as one on a Linux server, through Pinky running on the Mac the phone is connected to. Set the Pinky URL and token; approvals and hand-offs wait on their own and are announced in chat, and screenshots come back as images."
 author: "Bruce Xu"
-requires_hermes: ">=0.22.0"
+requires_hermes: ">=0.22.7"
 provides_tools:
   - phone_apps
   - phone_batch

@@ -42,8 +42,16 @@ Then ask in chat: *"Open Google Maps on my phone. How long is the drive from JFK
   such as Tailscale; do not expose Pinky's port to the internet.
 - **Data.** Screenshots are saved under `$HERMES_HOME/plugin-data/hermes-phone-use/screenshots/`.
   Screen text and images reach your model provider like any other tool output. No telemetry.
+- **Approvals live in Pinky, not in Hermes.** Phone actions are gated by Pinky's own rules and
+  approval panel. A tool call that waits for you keeps waiting up to 10 minutes in a chat; in a cron
+  run it returns `approval_pending` at once instead of hanging.
 - **Limits.** The Mac must be awake with Pinky running. Face ID, passwords and codes are always
   done by you. `phone_files` does not support iPhones.
+
+## License
+
+MIT. `pinky_tools.json` comes from Pinky (Apache-2.0); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Built with help from AI coding agents; every change was reviewed and tested against a real Pinky.
 
 ## Tests
 

@@ -110,6 +110,13 @@ def test_approval_pending_waits_and_notifies_once(pinky, tmp_path):
     assert len(told) == 1 and "Pinky" in told[0]
 
 
+def test_unattended_run_does_not_wait(pinky, tmp_path):
+    FakePinky.pending_left = 5
+    out = pu.run_tool("phone_tap", {"ref": 3}, pu.PinkyClient(pu.endpoint(pinky), TOKEN), lambda _: None,
+                      lambda: tmp_path, wait_s=0)
+    assert out.startswith("approval_pending") and len(FakePinky.calls) == 1
+
+
 def test_expired_session_is_renewed(pinky, tmp_path):
     client = pu.PinkyClient(pu.endpoint(pinky), TOKEN)
     pu.run_tool("phone_apps", {}, client, lambda _: None, lambda: tmp_path)
