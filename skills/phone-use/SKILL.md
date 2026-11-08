@@ -17,8 +17,12 @@ person before risky steps. Work with it, never around it.
 2. `phone_launch`, then act on refs (`[12]`) from the latest screen. Each action returns the new screen
    or a diff, so `phone_observe` is rarely needed. Use x,y only for things without a ref, e.g. buttons
    that only appear in the screenshot (ask for `screenshot: true` and look at it).
-3. Report what you read in plain words; attach a screenshot with `MEDIA:<path>` when it helps.
-4. Always end with `phone_release` (`outcome` + one-sentence `summary`).
+3. Before reporting numbers (balances, data left, amounts), make sure the app finished loading:
+   apps often draw `0`, `$0.00` or "Please wait..." first and fill in real values a few seconds
+   later. Call `phone_observe` with `wait_ms: 5000` after a launch and report only a value that two
+   consecutive reads agree on.
+4. Report what you read in plain words; attach a screenshot with `MEDIA:<path>` when it helps.
+5. Always end with `phone_release` (`outcome` + one-sentence `summary`).
 
 ## When the person is needed
 
