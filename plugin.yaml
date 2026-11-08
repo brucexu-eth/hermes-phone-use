@@ -1,0 +1,25 @@
+name: remote-phone
+version: "0.1.0"
+description: "Drive the phone attached to your Mac (iPhone Mirroring) or another machine (Android over adb) from a Hermes running elsewhere, such as a Linux server, and get screenshots back in Telegram or Discord. Pairs with the bundled phone-relay, which runs next to phone-harness on that machine and is reached over a private network."
+author: "Bruce Xu"
+requires_hermes: ">=0.22.0"
+provides_tools:
+  - remote_phone_exec
+provides_hooks:
+  - pre_tool_call
+requires_env:
+  - name: REMOTE_PHONE_TOKEN
+    description: "Bearer token shared with phone-relay (PHONE_RELAY_TOKEN on the phone's machine)"
+    secret: true
+config_schema:
+  relay_url:
+    type: str
+    default: ""
+    label: "Relay URL"
+    description: "phone-relay address on your private network, e.g. http://100.101.102.103:8765 (Tailscale) or http://127.0.0.1:8765 (SSH tunnel)."
+    required: true
+  auto_run:
+    type: bool
+    default: false
+    label: "Run without asking"
+    description: "Skip the approval prompt for each phone script. Off by default: the relay runs model-written Python on the remote machine."
