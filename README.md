@@ -1,50 +1,52 @@
 # Hermes Phone Use
 
-Drive the phone on your Mac from a Hermes that runs somewhere else, such as a Linux server, and get the screen back in Telegram or Discord.
+Operate your real phone from any Hermes — one on a Linux server, a VM, or another computer — and talk
+to it from Telegram, Discord or Slack.
 
 ```
-Telegram ─▶ Hermes (Linux) ─remote_phone_exec─▶ private network (Tailscale / SSH tunnel)
-          ◀─ screenshot (MEDIA:) ◀──────────────  phone-relay (Mac) ─▶ phone-harness ─▶ iPhone Mirroring
+Telegram ─▶ Hermes (anywhere) ──HTTP MCP over Tailscale──▶ Pinky (your Mac) ──▶ iPhone / Android
+          ◀── text + screenshots ◀────────────────────────  approvals and take-over stay on Pinky
 ```
 
-[phone-harness](https://github.com/phone-harness/phone-harness) drives a real iPhone through macOS iPhone Mirroring, but only from the Mac itself. Its hosted MCP covers cloud phones, not your own phone. This plugin adds the missing link: a small relay next to phone-harness and a Hermes tool that calls it.
+[Pinky](https://github.com/DIYgod/pinky) does the phone side: it runs on the Mac the phone is
+connected to and decides what an agent may do (blocked apps, read-only mode, approvals, take-over).
+This plugin connects Hermes to it and makes it work from chat:
+
+- **Two settings.** The Pinky URL and token; no MCP config to write.
+- **Approvals wait instead of failing.** When Pinky asks the person, the tool keeps waiting (up to
+  10 minutes) and posts one line to the chat, so you know to look at Pinky.
+- **Screenshots come back as images** you can send to the chat.
+- **The phone lease survives between tool calls**, and a new session is opened when Pinky's expires.
+- **A built-in skill** with the task shape, hand-off rules and a few proven app paths.
 
 ## Setup
 
-**On the Mac** (macOS 15+, iPhone Mirroring paired, phone-harness installed and `phone-harness doctor` green):
+1. On the Mac, in Pinky: **Settings › Remote agents**, turn it on and set the address to the Mac's
+   Tailscale IP, e.g. `100.101.102.103:7465`. Copy the agent token (`pinky token`).
+2. On the Hermes host:
 
 ```bash
-export PHONE_RELAY_TOKEN=$(openssl rand -hex 32)   # copy it for the Hermes side
-python3 relay/phone_relay.py --host <mac-tailscale-ip> --port 8765
+hermes plugins install brucexu-eth/hermes-phone-use   # asks for PINKY_TOKEN
+hermes config set plugins.entries.hermes-phone-use.settings.url 100.101.102.103:7465
 ```
 
-The relay uses only the Python standard library. It refuses to bind `0.0.0.0` and refuses tokens shorter than 32 characters.
+3. The first call shows Hermes as a new remote agent in Pinky: allow it once and pick its apps.
 
-**On the Hermes host:**
-
-```bash
-hermes plugins install <this repo>
-hermes config set plugins.entries.hermes-phone-use.settings.relay_url http://<mac-tailscale-ip>:8765
-# REMOTE_PHONE_TOKEN = the token above (prompted at install, or in Desktop → Settings → Plugins)
-```
-
-Then ask from any chat: *"Open Weather on my phone and send me a screenshot."*
-
-## Tool
-
-`remote_phone_exec(code, timeout_s=120)` sends Python with the phone-harness helpers (`ensure_device`, `screen`, `tap_text`, `type_text`, `swipe`, `open_app`, `screenshot`, …). The result contains stdout and stderr, and when the script called `screenshot()`, also a local `screenshot_path`. The agent shows that image in chat with `MEDIA:<path>`.
+Then ask in chat: *"Open Google Maps on my phone. How long is the drive from JFK Airport to Times Square if I leave now? Send me a screenshot of the route."*
 
 ## Safety and disclosure
 
-- **The relay runs model-written Python on the Mac with your user's permissions.** Keep it on a private network. The bearer token is the trust boundary.
-- **Every call needs your approval** through Hermes's approval gate (`pre_tool_call` → approve). The `auto_run` setting turns this off. It defaults to off.
-- **One script runs at a time.** A second request gets HTTP 409.
-- **The relay never logs script bodies.**
-- **Network.** The Hermes side talks only to the `relay_url` you configure. Screenshots are stored under `$HERMES_HOME/plugin-data/hermes-phone-use/screenshots/`. No telemetry.
-- **phone-harness limits still apply.** The Mac must be awake and logged in. The iPhone stays locked and nearby, because unlocking it pauses mirroring. There is no Face ID and no multi-touch. Never ask the agent to type passwords or 2FA codes.
+- **Pinky is the boundary.** Hermes gets only what Pinky allows; it cannot approve anything itself.
+  Keep read-only mode on for agents that only need to look.
+- **Network.** The plugin talks only to the URL you set. Plain HTTP is fine on a private network
+  such as Tailscale; do not expose Pinky's port to the internet.
+- **Data.** Screenshots are saved under `$HERMES_HOME/plugin-data/hermes-phone-use/screenshots/`.
+  Screen text and images reach your model provider like any other tool output. No telemetry.
+- **Limits.** The Mac must be awake with Pinky running. Face ID, passwords and codes are always
+  done by you. `phone_files` does not support iPhones.
 
 ## Tests
 
 ```bash
-python -m pytest -q tests   # real HTTP round trip: plugin → relay process → stub phone-harness
+python -m pytest -q tests   # real HTTP round trips against a local fake Pinky
 ```

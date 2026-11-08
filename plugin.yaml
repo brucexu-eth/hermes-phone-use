@@ -1,25 +1,31 @@
 name: hermes-phone-use
-version: "0.1.0"
-description: "Drive the phone attached to your Mac (iPhone Mirroring) or another machine (Android over adb) from a Hermes running elsewhere, such as a Linux server, and get screenshots back in Telegram or Discord. Pairs with the bundled phone-relay, which runs next to phone-harness on that machine and is reached over a private network."
+version: "0.2.0"
+description: "Operate your real phone from any Hermes, such as one on a Linux server, through Pinky running on the Mac the phone is connected to. Set the Pinky URL and token; approvals and hand-offs wait on their own and are announced in chat, and screenshots come back as images."
 author: "Bruce Xu"
 requires_hermes: ">=0.22.0"
 provides_tools:
-  - remote_phone_exec
-provides_hooks:
-  - pre_tool_call
+  - phone_apps
+  - phone_batch
+  - phone_connect
+  - phone_files
+  - phone_handoff
+  - phone_key
+  - phone_launch
+  - phone_observe
+  - phone_release
+  - phone_request_approval
+  - phone_swipe
+  - phone_tap
+  - phone_type
+  - phone_wait_for
 requires_env:
-  - name: REMOTE_PHONE_TOKEN
-    description: "Bearer token shared with phone-relay (PHONE_RELAY_TOKEN on the phone's machine)"
+  - name: PINKY_TOKEN
+    description: "Pinky agent token: run `pinky token` on the Mac, or copy it from Pinky Settings > Remote agents."
     secret: true
 config_schema:
-  relay_url:
+  url:
     type: str
     default: ""
-    label: "Relay URL"
-    description: "phone-relay address on your private network, e.g. http://100.101.102.103:8765 (Tailscale) or http://127.0.0.1:8765 (SSH tunnel)."
+    label: "Pinky URL"
+    description: "Pinky's Remote agents address on your private network, e.g. 100.101.102.103:7465 (Tailscale IP of the Mac)."
     required: true
-  auto_run:
-    type: bool
-    default: false
-    label: "Run without asking"
-    description: "Skip the approval prompt for each phone script. Off by default: the relay runs model-written Python on the remote machine."
