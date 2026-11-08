@@ -1,4 +1,4 @@
-"""remote-phone: drive the phone attached to another machine (usually your Mac) from a Hermes
+"""hermes-phone-use: drive the phone attached to another machine (usually your Mac) from a Hermes
 that runs somewhere else (a Linux server, a VM), and get the screen back in chat.
 
 Hermes side of a two-part plugin. The Mac runs ``relay/phone_relay.py`` next to phone-harness;
@@ -69,7 +69,7 @@ def _token() -> Optional[str]:
 def _shots_dir() -> Path:
     from hermes_constants import get_hermes_home
 
-    d = Path(get_hermes_home()) / "plugin-data" / "remote-phone" / "screenshots"
+    d = Path(get_hermes_home()) / "plugin-data" / "hermes-phone-use" / "screenshots"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -148,6 +148,6 @@ def remote_phone_exec(args: dict, **_: Any) -> str:
 def register(ctx: Any) -> None:
     global _ctx
     _ctx = ctx
-    ctx.register_tool(name=TOOL, toolset="remote-phone", schema=SCHEMA, handler=remote_phone_exec,
+    ctx.register_tool(name=TOOL, toolset="hermes-phone-use", schema=SCHEMA, handler=remote_phone_exec,
                       check_fn=_available, emoji="📱")
     ctx.register_hook("pre_tool_call", on_pre_tool_call)

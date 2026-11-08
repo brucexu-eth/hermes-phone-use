@@ -1,4 +1,4 @@
-name: remote-phone
+name: hermes-phone-use
 version: "0.1.0"
 description: "Drive the phone attached to your Mac (iPhone Mirroring) or another machine (Android over adb) from a Hermes running elsewhere, such as a Linux server, and get screenshots back in Telegram or Discord. Pairs with the bundled phone-relay, which runs next to phone-harness on that machine and is reached over a private network."
 author: "Bruce Xu"

@@ -1,4 +1,4 @@
-# remote-phone
+# Hermes Phone Use
 
 Drive the phone on your Mac from a Hermes that runs somewhere else, such as a Linux server, and get the screen back in Telegram or Discord.
 
@@ -24,7 +24,7 @@ The relay uses only the Python standard library. It refuses to bind `0.0.0.0` an
 
 ```bash
 hermes plugins install <this repo>
-hermes config set plugins.entries.remote-phone.settings.relay_url http://<mac-tailscale-ip>:8765
+hermes config set plugins.entries.hermes-phone-use.settings.relay_url http://<mac-tailscale-ip>:8765
 # REMOTE_PHONE_TOKEN = the token above (prompted at install, or in Desktop → Settings → Plugins)
 ```
 
@@ -40,7 +40,7 @@ Then ask from any chat: *"Open Weather on my phone and send me a screenshot."*
 - **Every call needs your approval** through Hermes's approval gate (`pre_tool_call` → approve). The `auto_run` setting turns this off. It defaults to off.
 - **One script runs at a time.** A second request gets HTTP 409.
 - **The relay never logs script bodies.**
-- **Network.** The Hermes side talks only to the `relay_url` you configure. Screenshots are stored under `$HERMES_HOME/plugin-data/remote-phone/screenshots/`. No telemetry.
+- **Network.** The Hermes side talks only to the `relay_url` you configure. Screenshots are stored under `$HERMES_HOME/plugin-data/hermes-phone-use/screenshots/`. No telemetry.
 - **phone-harness limits still apply.** The Mac must be awake and logged in. The iPhone stays locked and nearby, because unlocking it pauses mirroring. There is no Face ID and no multi-touch. Never ask the agent to type passwords or 2FA codes.
 
 ## Tests
