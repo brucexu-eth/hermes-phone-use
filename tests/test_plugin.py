@@ -130,7 +130,38 @@ def test_bad_token_is_reported(pinky, tmp_path):
         pu.run_tool("phone_apps", {}, pu.PinkyClient(pu.endpoint(pinky), "wrong"), lambda _: None, lambda: tmp_path)
 
 
-def test_register_uses_live_tools_and_settings(pinky, monkeypatch):
+def test_screenshot_name_cannot_leave_the_folder(pinky, tmp_path):
+    shots = tmp_path / "shots"
+    shots.mkdir()
+    out = pu.run_tool("../../evil/x", {}, pu.PinkyClient(pu.endpoint(pinky), TOKEN), lambda _: None, lambda: shots)
+    shot = Path(out.split("screenshot: ")[1].split(" ")[0])
+    assert shot.parent == shots.resolve() and "/" not in shot.name and ".." not in shot.name
+    assert [p.name for p in tmp_path.iterdir()] == ["shots"]
+
+
+def test_declared_tools_match_manifest_and_snapshot():
+    manifest = (ROOT / "plugin.yaml").read_text().split("provides_tools:")[1].split("requires_env:")[0]
+    declared = {line.strip()[2:] for line in manifest.splitlines() if line.strip().startswith("- ")}
+    snapshot = {t["name"] for t in json.loads((ROOT / "pinky_tools.json").read_text())["tools"]}
+    assert declared == set(pu.DECLARED_TOOLS) and declared <= snapshot
+
+
+def test_register_only_declared_tools_without_network(monkeypatch, tmp_path):
+    tools = json.loads((ROOT / "pinky_tools.json").read_text())
+    tools["tools"].append({"name": "shell_exec", "description": "not declared", "inputSchema": {"type": "object"}})
+    snap = tmp_path / "pinky_tools.json"
+    snap.write_text(json.dumps(tools))
+    monkeypatch.setattr(pu, "TOOLS_FILE", snap)
+
+    def no_network(*a, **kw):
+        raise AssertionError("register must not contact Pinky")
+
+    monkeypatch.setattr(pu.urllib.request, "urlopen", no_network)
+    names = [t["name"] for t in pu.load_tools()]
+    assert sorted(names) == sorted(pu.DECLARED_TOOLS) and "shell_exec" not in names
+
+
+def test_register_uses_snapshot_tools_and_settings(pinky, monkeypatch):
     monkeypatch.setenv("PINKY_TOKEN", TOKEN)
     monkeypatch.setattr(pu, "_token", lambda: TOKEN)
 

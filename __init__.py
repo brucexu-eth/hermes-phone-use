@@ -32,7 +32,15 @@ NEEDS_PERSON = ("paused", "user_took_over", "device_locked", "device_needs_setup
 TOOLS_FILE = Path(__file__).with_name("pinky_tools.json")
 SKILL_FILE = Path(__file__).parent / "skills" / "phone-use" / "SKILL.md"
 
+# Must match provides_tools in plugin.yaml (a test keeps them in sync).
+DECLARED_TOOLS = frozenset({
+    "phone_apps", "phone_batch", "phone_connect", "phone_files", "phone_handoff", "phone_key",
+    "phone_launch", "phone_observe", "phone_release", "phone_request_approval", "phone_swipe",
+    "phone_tap", "phone_type", "phone_wait_for",
+})
+
 _APPROVAL_ID = re.compile(r"approval_id\W+([A-Za-z0-9_-]+)")
+_UNSAFE = re.compile(r"[^A-Za-z0-9_-]")
 
 PROMPT = """## Phone (Pinky)
 You can operate the user's real phone with the phone_* tools. Load skill `hermes-phone-use:phone-use` before a phone task.
@@ -111,9 +119,6 @@ class PinkyClient:
                     raise PinkyError(f"Pinky answered HTTP {e.code}") from e
             raise PinkyError("unreachable")
 
-    def list_tools(self, timeout: float = 5) -> list[dict]:
-        return self._with_session("tools/list", {}, timeout).get("tools", [])
-
     def call(self, name: str, arguments: dict, timeout: float = CALL_TIMEOUT_S) -> dict:
         return self._with_session("tools/call", {"name": name, "arguments": arguments}, timeout)
 
@@ -150,7 +155,10 @@ def run_tool(name: str, args: dict, client: PinkyClient, notify: Callable[[str],
     for i, c in enumerate(result.get("content", [])):
         if c.get("type") == "image" and c.get("data"):
             ext = ".jpg" if "jpeg" in str(c.get("mimeType", "")) else ".png"
-            path = shots_dir() / f"{time.strftime('%Y%m%d-%H%M%S')}-{name}-{i}{ext}"
+            folder = shots_dir().resolve()
+            path = (folder / f"{time.strftime('%Y%m%d-%H%M%S')}-{_UNSAFE.sub('_', name)}-{i}{ext}").resolve()
+            if path.parent != folder:
+                raise PinkyError("refusing to save a screenshot outside the screenshots folder")
             path.write_bytes(base64.b64decode(c["data"]))
             lines.append(f"screenshot: {path} (show it to the user with MEDIA:{path})")
     if result.get("isError") and not lines:
@@ -235,15 +243,13 @@ def _handler(name: str) -> Callable:
 
 
 def load_tools() -> list[dict]:
-    """Live tool list when Pinky answers within a few seconds, else the bundled snapshot."""
-    if _configured():
-        try:
-            tools = _get_client().list_tools(timeout=5)
-            if tools:
-                return tools
-        except Exception:
-            pass
-    return json.loads(TOOLS_FILE.read_text(encoding="utf-8"))["tools"]
+    """The bundled snapshot, limited to the tools declared in plugin.yaml.
+
+    The installed tool set never follows the live server: new Pinky tools ship by updating
+    pinky_tools.json and provides_tools together. No network call happens at startup.
+    """
+    tools = json.loads(TOOLS_FILE.read_text(encoding="utf-8"))["tools"]
+    return [t for t in tools if t.get("name") in DECLARED_TOOLS]
 
 
 def register(ctx: Any) -> None:
